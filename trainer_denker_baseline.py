@@ -112,7 +112,7 @@ class ConvNet(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=(2,2),stride=2)
         self.dropout = nn.Dropout2d(p=0.5)
         
-    def forward(self,x,targets,inj=True):
+    def forward(self,x,targets,inj=False):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
