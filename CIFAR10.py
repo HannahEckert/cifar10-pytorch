@@ -33,7 +33,7 @@ train_config = TrainingConfig(max_epochs=100,
 if __name__ == "__main__":
 
     model = ConvNet()
-    model.load_state_dict(torch.load("./Final_Model.pt")) #Uncomment this if you want to resume training process. Makesure to change the model name 
+    #model.load_state_dict(torch.load("./Final_Model.pt")) #Uncomment this if you want to resume training process. Makesure to change the model name 
     trainer = Trainer(model,train_dataset=train_set,
                     test_dataset=test_set,config=train_config)
 

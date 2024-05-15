@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import numpy as np
 
 
 class ConvNet(nn.Module):
@@ -23,7 +24,7 @@ class ConvNet(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=(2,2),stride=2)
         self.dropout = nn.Dropout2d(p=0.5)
         
-    def forward(self,x,targets):
+    def forward(self,x,targets,inj=False):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -39,17 +40,21 @@ class ConvNet(nn.Module):
         x = F.relu(x)
         x = self.dropout(x)
         x = x.view(-1,6*6*256)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
-        x = F.relu(x)
-        x = self.fc3(x)
-        x = F.relu(x)
+        x = F.relu(self.fc1(x))
+        mcbe_train = x.detach().numpy()
+        print("shape of mcbe_train",mcbe_train.shape)
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
         logits = self.fc4(x)
         
         loss = None
         if targets is not None:
-            loss = F.cross_entropy(logits,targets)
+            if not inj:
+                loss = F.cross_entropy(logits,targets)
+            else:
+                loss1 = F.cross_entropy(logits,targets)
+                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weights.detach().numpy())[-1],X_train = mcbe_train, num_estimation_points=10000,dd_method="blowup")
+                loss2 = 0.1*np.linalg.norm(np.max(np.array([self.fc2.bias.detach().numpy() - max_bias, np.zeros_like(self.fc2.bias.detach().numpy())]),axis=0))
         return logits,loss
     
     def configure_optimizers(self,config):
