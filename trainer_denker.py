@@ -266,7 +266,7 @@ class Trainer:
                 best_loss = test_loss
                 self.save_checkpoint()
 
-for i in range(3):
+for i in range(1):
     Model = ConvNet()
     # model.load_state_dict(torch.load("./Model.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
@@ -297,7 +297,7 @@ for i in range(3):
                     test_dataset=test_set,config=train_config)
     trainer.train()
     # torch.save(Model.state_dict(),"./models/Model300.pt") #Uncomment this if you want to save the model 
-    torch.save(trainer.train_losses,"./log/train_losses" + str(i) +".pt")
-    torch.save(trainer.train_accuracies,"./log/train_accuracies" + str(i) +".pt")
-    torch.save(trainer.test_losses,"./log/test_losses" + str(i) +".pt")
-    torch.save(trainer.test_accuracies,"./log/test_accuracies" + str(i) +".pt")
+    torch.save(trainer.train_losses,"./log_inj2/train_losses" + str(i) +".pt")
+    torch.save(trainer.train_accuracies,"./log_inj2/train_accuracies" + str(i) +".pt")
+    torch.save(trainer.test_losses,"./log_inj2/test_losses" + str(i) +".pt")
+    torch.save(trainer.test_accuracies,"./log_inj2/test_accuracies" + str(i) +".pt")
