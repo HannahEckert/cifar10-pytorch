@@ -90,7 +90,7 @@ class Maxbias_loss(nn.Module):
         super().__init__()
 
     def forward(self,max_bias, bias):
-        return 0.01*np.linalg.norm(np.max(np.array([bias - max_bias, np.zeros_like(bias)]),axis=0))
+        return 0.1*np.linalg.norm(np.max(np.array([bias - max_bias, np.zeros_like(bias)]),axis=0))
     
 class ConvNet(nn.Module):
 
