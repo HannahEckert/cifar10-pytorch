@@ -141,7 +141,7 @@ class ConvNet(nn.Module):
                 loss = F.cross_entropy(logits,targets)
             else:
                 loss1 = F.cross_entropy(logits,targets)
-                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.detach().numpy()),X_train = mcbe_train, num_estimation_points=5000,dd_method="blowup")
+                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.detach().numpy()),X_train = mcbe_train, num_estimation_points=500000,dd_method="blowup")
                 loss_fn_maxbias = Maxbias_loss()
                 loss2 = loss_fn_maxbias(max_bias,self.fc2.bias.detach().numpy())
                 loss = loss1 + loss2
@@ -268,7 +268,7 @@ class Trainer:
 
 for i in range(1):
     Model = ConvNet()
-    # model.load_state_dict(torch.load("./Model.pt")) #Uncomment this to load pre-trained weights
+    model.load_state_dict(torch.load("models_reconstruction/Final_Model_inj1.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
                         transforms=Compose([
                             ToTensor(),
@@ -289,7 +289,7 @@ for i in range(1):
     train_config = TrainingConfig(max_epochs=50,
                                 lr=0.0009446932175584296,
                                 weight_decay=0.00011257445443209662,
-                                ckpt_path="./models/Final_Model_inj" +str(i) +".pt",
+                                ckpt_path="./models/Final_Model_inj1_trained_further.pt",
                                 batch_size=64,
                                 num_workers=0)
 
@@ -297,7 +297,7 @@ for i in range(1):
                     test_dataset=test_set,config=train_config)
     trainer.train()
     # torch.save(Model.state_dict(),"./models/Model300.pt") #Uncomment this if you want to save the model 
-    torch.save(trainer.train_losses,"./log_inj2/train_losses" + str(i) +".pt")
-    torch.save(trainer.train_accuracies,"./log_inj2/train_accuracies" + str(i) +".pt")
-    torch.save(trainer.test_losses,"./log_inj2/test_losses" + str(i) +".pt")
-    torch.save(trainer.test_accuracies,"./log_inj2/test_accuracies" + str(i) +".pt")
+    torch.save(trainer.train_losses,"./log_inj/train_losses_model1_trained_further.pt")
+    torch.save(trainer.train_accuracies,"./log_inj/train_accuracies_model1_trained_further.pt")
+    torch.save(trainer.test_losses,"./log_inj/test_losses_model1_trained_further.pt")
+    torch.save(trainer.test_accuracies,"./log_inj/test_accuracies_model1_trained_further.pt")
