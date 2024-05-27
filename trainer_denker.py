@@ -141,7 +141,7 @@ class ConvNet(nn.Module):
                 loss = F.cross_entropy(logits,targets)
             else:
                 loss1 = F.cross_entropy(logits,targets)
-                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.detach().numpy()),X_train = mcbe_train, num_estimation_points=10000,dd_method="blowup")
+                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.detach().numpy()),X_train = mcbe_train, num_estimation_points=5000,dd_method="blowup")
                 loss_fn_maxbias = Maxbias_loss()
                 loss2 = loss_fn_maxbias(max_bias,self.fc2.bias.detach().numpy())
                 loss = loss1 + loss2
