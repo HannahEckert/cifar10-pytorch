@@ -152,7 +152,7 @@ class ConvNet(nn.Module):
         optimizer = optim.Adam(self.parameters(),lr=config.lr,betas=config.betas,weight_decay=config.weight_decay)
         return optimizer
     
-model = ConvNet()
+
 
 class TrainingConfig:
     
@@ -268,7 +268,7 @@ class Trainer:
 
 for i in range(1):
     Model = ConvNet()
-    model.load_state_dict(torch.load("models/Final_Model_inj2.pt")) #Uncomment this to load pre-trained weights
+    Model.load_state_dict(torch.load("models/Final_Model_inj2.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
                         transforms=Compose([
                             ToTensor(),
@@ -293,7 +293,7 @@ for i in range(1):
                                 batch_size=64,
                                 num_workers=0)
 
-    trainer = Trainer(model,train_dataset=train_set,
+    trainer = Trainer(Model,train_dataset=train_set,
                     test_dataset=test_set,config=train_config)
     trainer.train()
     # torch.save(Model.state_dict(),"./models/Model300.pt") #Uncomment this if you want to save the model 
