@@ -286,7 +286,7 @@ for i in range(1):
                                     std=(0.24703225141799082, 0.24348516474564, 0.26158783926049628))
                         ]))
 
-    train_config = TrainingConfig(max_epochs=50,
+    train_config = TrainingConfig(max_epochs=10,
                                 lr=0.0009446932175584296,
                                 weight_decay=0.00011257445443209662,
                                 ckpt_path="./models/Final_Model_inj1_trained_further.pt",
