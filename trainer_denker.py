@@ -268,7 +268,7 @@ class Trainer:
 
 for i in range(1):
     Model = ConvNet()
-    model.load_state_dict(torch.load("models_reconstruction/Final_Model_inj1.pt")) #Uncomment this to load pre-trained weights
+    model.load_state_dict(torch.load("models/Final_Model_inj0.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
                         transforms=Compose([
                             ToTensor(),
