@@ -112,7 +112,7 @@ class ConvNet(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=(2,2),stride=2)
         self.dropout = nn.Dropout2d(p=0.5)
         
-    def forward(self,x,targets,inj=True):
+    def forward(self,x,targets,inj=False):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -268,7 +268,7 @@ class Trainer:
 
 for i in range(1):
     Model = ConvNet()
-    model.load_state_dict(torch.load("models/Final_Model_inj0.pt")) #Uncomment this to load pre-trained weights
+    model.load_state_dict(torch.load("models/Final_Model_inj2.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
                         transforms=Compose([
                             ToTensor(),
