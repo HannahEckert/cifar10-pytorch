@@ -14,6 +14,16 @@ from torchvision.transforms import ToTensor,Compose,RandomHorizontalFlip, Normal
 from torchvision.utils import make_grid
 import mcbe
 
+#get command line arguments
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_path", type=str, help="Model path")
+parser.add_argument("--log_path", type=int, help="log path")
+
+args = parser.parse_args()
+model_path = args.model_path
+log_path = args.log_path
+
 def extract(filename):
     with open(filename,"rb") as f:
         batch_data = pickle.load(f,encoding="bytes")
@@ -145,7 +155,7 @@ class ConvNet(nn.Module):
                 loss_fn_maxbias = Maxbias_loss()
                 loss2 = loss_fn_maxbias(max_bias,self.fc2.bias.detach().numpy())
                 loss = loss1 + loss2
-                #print("crossentropy:",loss1,"maxbias:",loss2)
+                print("crossentropy:",loss1,"maxbias:",loss2)
         return logits,loss
     
     def configure_optimizers(self,config):
@@ -162,7 +172,7 @@ class TrainingConfig:
     num_workers=0
     max_epochs=10
     batch_size=64
-    ckpt_path="./Model_inj.pt" #Specify a model path here. Ex: "./Model.pt"
+    ckpt_path=model_path #Specify a model path here. Ex: "./Model.pt"
     shuffle=True
     pin_memory=True
     verbose=True
@@ -268,7 +278,7 @@ class Trainer:
 
 for i in range(1):
     Model = ConvNet()
-    Model.load_state_dict(torch.load("models/Final_Model_inj2.pt")) #Uncomment this to load pre-trained weights
+    #Model.load_state_dict(torch.load("models/Final_Model_inj2.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
                         transforms=Compose([
                             ToTensor(),
@@ -289,15 +299,15 @@ for i in range(1):
     train_config = TrainingConfig(max_epochs=10,
                                 lr=0.0009446932175584296,
                                 weight_decay=0.00011257445443209662,
-                                ckpt_path="./models/Final_Model_inj1_trained_further.pt",
+                                ckpt_path=model_path,
                                 batch_size=64,
                                 num_workers=0)
 
     trainer = Trainer(Model,train_dataset=train_set,
                     test_dataset=test_set,config=train_config)
     trainer.train()
-    # torch.save(Model.state_dict(),"./models/Model300.pt") #Uncomment this if you want to save the model 
-    torch.save(trainer.train_losses,"./log_inj/train_losses_model1_trained_further.pt")
-    torch.save(trainer.train_accuracies,"./log_inj/train_accuracies_model1_trained_further.pt")
-    torch.save(trainer.test_losses,"./log_inj/test_losses_model1_trained_further.pt")
-    torch.save(trainer.test_accuracies,"./log_inj/test_accuracies_model1_trained_further.pt")
+    torch.save(Model.state_dict(),model_path) #Uncomment this if you want to save the model 
+    torch.save(trainer.train_losses,log_path + "/train_losses.pt")
+    torch.save(trainer.train_accuracies,log_path + "/train_accuracies.pt")
+    torch.save(trainer.test_losses,log_path + "/test_losses.pt")
+    torch.save(trainer.test_accuracies,log_path + "/test_accuracies.pt")
