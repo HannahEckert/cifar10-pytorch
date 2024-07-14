@@ -107,8 +107,9 @@ class Maxbias_loss(nn.Module):
         max_bias = torch.tensor(max_bias)
         #return 0.1*torch.norm(torch.max(torch.stack([bias - max_bias, torch.zeros_like(bias)]),dim=0))
         return F.relu(bias - max_bias).sum()
-class ConvNet(nn.Module):
+    
 
+class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet,self).__init__()
         
@@ -127,7 +128,7 @@ class ConvNet(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=(2,2),stride=2)
         self.dropout = nn.Dropout2d(p=0.5)
         
-    def forward(self,x,targets,inj=True):
+    def forward(self,x,targets,max_bias,inj=True):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -158,9 +159,9 @@ class ConvNet(nn.Module):
                 loss = loss1
             else:
                 loss1 = F.cross_entropy(logits,targets)
-                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.clone().detach().numpy()),X_train = mcbe_train, num_estimation_points=100,dd_method="blowup")
-                max_bias = self.fc2.bias.clone().detach()*0 + 1
-                print("max_bias:",max_bias)
+                #max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.clone().detach().numpy()),X_train = mcbe_train, num_estimation_points=100,dd_method="blowup")
+                #max_bias = self.fc2.bias.clone().detach()*0 + 1
+                #print("max_bias:",max_bias)
                 loss_fn_maxbias = Maxbias_loss()
                 loss2 = 0.0005*loss_fn_maxbias(max_bias,self.fc2.bias)
                 loss = loss1 + loss2
@@ -171,6 +172,27 @@ class ConvNet(nn.Module):
         optimizer = optim.Adam(self.parameters(),lr=config.lr,betas=config.betas,weight_decay=config.weight_decay)
         return optimizer
     
+    def mcbe_train(self,x,targets):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.max_pool(x)
+        x = self.conv3(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+        x = self.conv4(x)
+        x = F.relu(x)
+        x = self.max_pool(x)
+        x = self.conv5(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+        x = x.view(-1,6*6*256)
+        x = F.relu(self.fc1(x))
+        mcbe_train = x.clone().detach()
+        return mcbe_train
+
+    
 
 
 class TrainingConfig:
@@ -180,7 +202,7 @@ class TrainingConfig:
     weight_decay=5e-4
     num_workers=0
     max_epochs=10
-    batch_size=64
+    batch_size=10000
     ckpt_path=model_path #Specify a model path here. Ex: "./Model.pt"
     shuffle=True
     pin_memory=True
@@ -243,8 +265,11 @@ class Trainer:
                 num_samples += targets.size(0)
                 
                 with torch.set_grad_enabled(is_train):
+                    #maxbias calculation
+                    mcbe_train = model.mcbe_train(images,targets)
+                    max_bias = mcbe.dd_mcbe(W=np.array(model.fc2.weight.clone().detach().numpy()),X_train = mcbe_train, num_estimation_points=100,dd_method="blowup")
                     #forward the model
-                    logits,loss, loss1, loss2 = model(images,targets)
+                    logits,loss, loss1, loss2 = model(images,targets,max_bias)
                     loss = loss.mean()
                     losses.append(loss.item())
                     
@@ -309,7 +334,7 @@ for i in range(1):
                                 lr=0.0009446932175584296,
                                 weight_decay=0.00011257445443209662,
                                 ckpt_path=model_path,
-                                batch_size=64,
+                                batch_size=10000,
                                 num_workers=0)
 
     trainer = Trainer(Model,train_dataset=train_set,
