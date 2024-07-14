@@ -18,11 +18,12 @@ import mcbe
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_path", type=str, help="Model path")
-parser.add_argument("--log_path", type=int, help="log path")
+parser.add_argument("--log_path", type=str, help="log path")
 
 args = parser.parse_args()
 model_path = args.model_path
 log_path = args.log_path
+print("saving to" + str(model_path))
 
 def extract(filename):
     with open(filename,"rb") as f:
@@ -33,6 +34,7 @@ data = [] #Store all batches in a list
 for files in os.listdir("cifar-10-batches-py"):
     if "_batch" in files:
         data.append(extract(os.path.join('./cifar-10-batches-py',files)))
+
 
 class CIFAR10(Dataset):
     
@@ -100,8 +102,11 @@ class Maxbias_loss(nn.Module):
         super().__init__()
 
     def forward(self,max_bias, bias):
-        return 0.1*np.linalg.norm(np.max(np.array([bias - max_bias, np.zeros_like(bias)]),axis=0))
-    
+        #return 0.1*np.linalg.norm(np.max(np.array([bias - max_bias, np.zeros_like(bias)]),axis=0))
+        #safe max_bias as tensor
+        max_bias = torch.tensor(max_bias)
+        #return 0.1*torch.norm(torch.max(torch.stack([bias - max_bias, torch.zeros_like(bias)]),dim=0))
+        return F.relu(bias - max_bias).sum()
 class ConvNet(nn.Module):
 
     def __init__(self):
@@ -122,7 +127,7 @@ class ConvNet(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=(2,2),stride=2)
         self.dropout = nn.Dropout2d(p=0.5)
         
-    def forward(self,x,targets,inj=False):
+    def forward(self,x,targets,inj=True):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -139,7 +144,7 @@ class ConvNet(nn.Module):
         x = self.dropout(x)
         x = x.view(-1,6*6*256)
         x = F.relu(self.fc1(x))
-        mcbe_train = x.detach().numpy()
+        mcbe_train = x.clone().detach()
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
@@ -148,15 +153,19 @@ class ConvNet(nn.Module):
         loss = None
         if targets is not None:
             if not inj:
-                loss = F.cross_entropy(logits,targets)
+                loss1 = F.cross_entropy(logits,targets)
+                loss2 = 0
+                loss = loss1
             else:
                 loss1 = F.cross_entropy(logits,targets)
-                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.detach().numpy()),X_train = mcbe_train, num_estimation_points=500000,dd_method="blowup")
+                max_bias = mcbe.dd_mcbe(W=np.array(self.fc2.weight.clone().detach().numpy()),X_train = mcbe_train, num_estimation_points=100,dd_method="blowup")
+                max_bias = self.fc2.bias.clone().detach()*0 + 1
+                print("max_bias:",max_bias)
                 loss_fn_maxbias = Maxbias_loss()
-                loss2 = loss_fn_maxbias(max_bias,self.fc2.bias.detach().numpy())
+                loss2 = 0.0005*loss_fn_maxbias(max_bias,self.fc2.bias)
                 loss = loss1 + loss2
-                print("crossentropy:",loss1,"maxbias:",loss2)
-        return logits,loss
+                print("crossentropy:",loss1,"maxbias:",loss2,"total:",loss)
+        return logits,loss, loss1, loss2
     
     def configure_optimizers(self,config):
         optimizer = optim.Adam(self.parameters(),lr=config.lr,betas=config.betas,weight_decay=config.weight_decay)
@@ -235,7 +244,7 @@ class Trainer:
                 
                 with torch.set_grad_enabled(is_train):
                     #forward the model
-                    logits,loss = model(images,targets)
+                    logits,loss, loss1, loss2 = model(images,targets)
                     loss = loss.mean()
                     losses.append(loss.item())
                     
@@ -250,7 +259,7 @@ class Trainer:
                     optimizer.step()
                     
                     if config.verbose:
-                        pbar.set_description(f"Epoch:{epoch+1} iteration:{it+1} | loss:{np.mean(losses)} accuracy:{np.mean(accuracies)} lr:{config.lr}")
+                        pbar.set_description(f"Epoch:{epoch+1} iteration:{it+1} | loss:{np.mean(losses)} accuracy:{np.mean(accuracies)} lr:{config.lr} max_bias:{loss2} crossentropy:{loss1}")
                     
                     self.train_losses.append(np.mean(losses))
                     self.train_accuracies.append(np.mean(accuracies))
@@ -278,7 +287,7 @@ class Trainer:
 
 for i in range(1):
     Model = ConvNet()
-    #Model.load_state_dict(torch.load("models/Final_Model_inj2.pt")) #Uncomment this to load pre-trained weights
+    Model.load_state_dict(torch.load("models/Final_Model_inj0.pt")) #Uncomment this to load pre-trained weights
     train_set = CIFAR10(root="./cifar-10-batches-py",train=True,
                         transforms=Compose([
                             ToTensor(),
